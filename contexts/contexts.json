@@ -1,0 +1,117 @@
+{
+  "rag-eval-harness": {
+    "name": "rag-eval-harness",
+    "what": "A small, transparent, standard-library harness that measures RAG (retrieval-augmented generation) quality. It was built to test whether a targeted fix for one failure class (right document, wrong passage on top) holds up outside the data it was built on.",
+    "results": [
+      "On 500 SQuAD questions the gold answer reached the top passage in 315 cases without the stemmed reranker (Wilson 95% 0.587 to 0.671) and 319 with it (0.595 to 0.679): 26 helped against 22 hurt, exact sign test p 0.67. The reranker that took the synthetic Deep set from 23 to 32 of 32 did not transfer to real data.",
+      "Span answers were the one significant gain: SQuAD lexical passes rose from 24 to 113 of 500 (McNemar p < 0.0001).",
+      "The pipeline has run end to end on 700 real questions, and every scored result regenerates from the committed evidence by one command."
+    ],
+    "ceiling": "Verdict: Functional, not pre-registered. The hypotheses are post hoc, so the repo is capped at Functional. The origin claim attached to the project (a private pipeline said to have gone from a 72.7 percent pass rate to 95 percent or more) is self-reported and has no evidence in this repo."
+  },
+  "multi-doc-research-assistant": {
+    "name": "Multi-Doc Research Assistant",
+    "what": "A local research assistant that answers questions from your own documents (txt, md, pdf) with citations, and refuses when the answer is not there. It chunks and embeds documents locally, answers with an extractive sentence plus a document and chunk citation, and abstains with a plain 'Not in the documents.' when the evidence scores below the frozen 0.40 cosine similarity threshold. No external LLM API and no API keys; after a one-time embedding model download it runs offline.",
+    "results": [
+      "H1 CONFIRMED: 29 of 30 in-corpus questions answered with the correct document cited (0.967 against a frozen 0.80 line).",
+      "H2 CONFIRMED: 18 of 20 out-of-corpus questions refused (0.900 against a frozen 0.80 line). The reference failure that motivated this study abstained on only 0.167 of adversarial questions.",
+      "H3 CONFIRMED: median latency 0.0013 s per question over 250 measurements.",
+      "Named weakness: the extracted sentence contains the gold answer phrase in only 0.414 of answered questions. The citation is the product and the sentence is a pointer.",
+      "Failure cases are published in RESULTS.md: IN-17 abstained at 0.3967, OUT-07 answered at 0.4162, OUT-20 answered at 0.5071."
+    ],
+    "ceiling": "This is a local tool and a single-corpus study (16 self-written documents, 5,124 words), not a hosted product and not a production retrieval service. It does not support claims about retrieval systems in general."
+  },
+  "mcp-toolkit": {
+    "name": "mcp-toolkit",
+    "what": "A small, standard-library MCP (Model Context Protocol) tool server in three levels (in-process, stdio, authenticated HTTP) that enforces authentication, roles and named safety rules before any tool runs, and says why it refused.",
+    "results": [
+      "MCP conformance (v1.1): an automated suite runs 32 checks against the official MCP specification (protocol version 2025-11-25, negotiated down to 2024-11-05) across the lifecycle, JSON-RPC 2.0 message shapes and error codes, tools, resources, ping, and the stdio and streamable HTTP transports: 32 passed, 0 failed.",
+      "Over authenticated HTTP, a scripted 30-call plan got 8 successes and 18 refusals, each with a named reason and an audit entry (3 unauthenticated, 2 role blocks, 13 safety blocks), plus 4 named errors.",
+      "On a 22-case hand-labelled corpus the SQL guard made 5 false positives and 4 false negatives."
+    ],
+    "ceiling": "Verdict: Functional, not pre-registered. The counts are exact counts on fixed, deterministic inputs, not rates for real traffic. Connecting the official MCP SDK remains future work."
+  },
+  "llm-observability": {
+    "name": "llm-observability",
+    "what": "Request logging, tracing and a simple drift rule (PSI, pooled-SD mean shift, two-proportion z) that flags latency, cost and quality drift between windows of logged LLM requests, calibrated on a known generator and on one real local-model window.",
+    "results": [
+      "On simulated request logs at 1,000 records per window, the drift rule raised no false alert in 50 no-drift control pairs (0/50, Wilson 95% 0.00 to 0.07) and alerted on both injected drifts.",
+      "It is weak on small changes: a 0.25 SD latency shift alerted in 15/50 runs (0.19 to 0.44) where a KS baseline caught 50/50, and below 500 records per window it false-alarmed in 38/50 to 50/50 controls.",
+      "Real window (2026-11-15, level-4-live): 340 real requests to a local Qwen2.5-0.5B-Instruct model over 1 h 58 min, 0 errors, mean latency 304 ms (p50 287, p95 653, p99 718), 48,456 tokens by the server's own usage counts, no drift between the window's halves, and a mechanical answer check at 255/340."
+    ],
+    "ceiling": "Verdict: Functional, not pre-registered. The real window was a program-driven workload on one personal fleet machine, not production traffic. The reliability profile (targets, a timed drill on a real service, a runbook) is not met."
+  },
+  "cpp-ann-index-lab": {
+    "name": "cpp-ann-index-lab",
+    "what": "Two approximate nearest neighbour indexes written from scratch in C++20, standard library only: an IVF index and an HNSW-style graph index, measured against exact brute force on 58,999 embedded SQuAD chunks (256-dimensional model2vec embeddings) with 300 held-out queries. Released as the ann_query command-line tool, v1.0.0.",
+    "results": [
+      "H1 CONFIRMED: IVF at its tuned point (nlist 512, nprobe 32) reaches recall@10 0.9487 with p99 1.281 ms, 8.42x faster than brute force p99 10.788 ms.",
+      "H2 CONFIRMED: the graph index reaches recall@10 0.9750 at p99 0.971 ms (M 16, ef 128) and 0.9620 at p99 0.514 ms (M 32, ef 32), better recall at equal or lower latency than the IVF tuned point.",
+      "H3 CONFIRMED: every configuration stays inside the frozen memory budget of 1,536 bytes per vector; the heaviest, graph M 32, totals 1,340.8 bytes per vector.",
+      "Cross-study comparison, labelled as such in the repo because the harness differs: published FAISS IndexHNSWFlat recall@10 0.967 against this graph index's 0.9620 at M 32, ef 32.",
+      "Ground truth was cross-validated against an independent NumPy exact top-10: 300 of 300 queries, 0 mismatches."
+    ],
+    "ceiling": "Study scope only: one corpus, one machine, one query set, one frozen protocol. These numbers describe this implementation on this workload. They are not a claim about production systems, other corpora, or production experience."
+  },
+  "cpp-inference-engine-lab": {
+    "name": "cpp-inference-engine-lab",
+    "what": "A from-scratch C++20 inference engine for GPT-2 small (124M parameters): its own safetensors parser, tensor kernels, attention, KV cache, and a W8A32 weight-only int8 quantization path, standard library only. Released as the engine_generate tool, v1.0.0.",
+    "results": [
+      "H1 REFUTED: int8 throughput ratio 0.594 (3.395 vs 5.713 tokens per second); the frozen line was at least 1.5x.",
+      "H2 CONFIRMED: perplexity barely moved, 33.8158 (int8) vs 33.8165 (fp32), a relative change of -0.002 percent against a line of under 5 percent.",
+      "H3 CONFIRMED: peak memory ratio 0.548 (310.9 vs 567.0 MiB) against a line of at most 0.60.",
+      "Correctness: 14 tests pass, and fp32 logits match an independent float64 NumPy reference within 4.17e-07."
+    ],
+    "ceiling": "Study scope only: one model, one machine, one quantization scheme, greedy decoding, a fixed perplexity slice and prompt suite. Refuted results are reported as refuted. No production serving or batching claim is made."
+  },
+  "r-credit-fairness-lab": {
+    "name": "r-credit-fairness-lab",
+    "what": "An R rebuild of a published Python credit-risk pipeline on the public Taiwan 2005 credit dataset: the Python study's split replicated exactly in pure R and verified by hash, models refit in R (GBM, GAM, ridge logistic), and the rebuilt model's group fairness audited. It ships as a runnable R toolkit, v1.0.0.",
+    "results": [
+      "H1 CONFIRMED: R GBM AUC 0.78237 vs the Python champion 0.7810, a difference of 0.00137 inside the frozen 0.01 band, on the identical split (SHA-256 of sorted test positions f2d688ab873deecc378b0212ae22bc297631f9833be82a856cd5fa4fd8f1598c on both sides; test n 9,000, event rate 0.22122).",
+      "H2 REFUTED: GAM AUC 0.76147, so GBM minus GAM is 0.02090, over the frozen 0.02 line by 0.00090.",
+      "H3 CONFIRMED: the largest equal-opportunity gap is on education at 39.16 percentage points, driven by the small 'others' group (n 120, 8 defaults), a caveat printed wherever the number appears. The age-band gap is 5.78 pp and the sex gap is 1.21 pp."
+    ],
+    "ceiling": "This study evidences method only. It reproduces a published Python pipeline in R on public Taiwan 2005 data. It is not production experience, not a Canadian portfolio result, and not evidence about any real lender's decisions."
+  },
+  "algorithms-evidence-pack": {
+    "name": "algorithms-evidence-pack",
+    "what": "Thirty hand-written algorithm implementations in Python across ten areas (sorting, searching, hash maps, stacks, heaps, graphs, dynamic programming and more), each verified by tests cross-checked against independent references on seeded random inputs, with measured benchmarks against naive baselines.",
+    "results": [
+      "85 tests, all passing.",
+      "Two-sum, hash map vs brute force: about 571.7x at n = 2,000 (0.38 ms vs 217.45 ms).",
+      "Longest increasing subsequence, binary search vs quadratic DP: about 1299.7x at n = 2,000 (0.39 ms vs 513.08 ms).",
+      "Sliding window maximum 5.8x; k largest 5.5x; next greater element 3.1x; Dijkstra vs Bellman-Ford only 1.3x at 300 nodes, named in the repo as a small-graph effect.",
+      "Honest loss, published in RESULTS.md: both hand-written sorts lose to the built-in sorted() (quicksort 55.72 ms, mergesort 73.42 ms, against about 5 ms)."
+    ],
+    "ceiling": "This is an evidence pack of fundamentals: the algorithms are written by hand and verified by tests, and the timings are measured, not estimated. It is not a claim about interview performance, production system design, or anything beyond what the tests and benchmarks in the repo show."
+  },
+  "hitl-approval-gate": {
+    "name": "hitl-approval-gate",
+    "what": "A human-in-the-loop approval gate for agent actions. Producers submit structured action requests, a readable policy file routes them (read-only actions auto-approved; data writes, external sends and financial actions to a human; destructive actions denied), humans decide on a web page or by CLI with a reason, and every request and decision lands in an append-only log with a SHA-256 hash chain that detects edits and deletions.",
+    "results": [
+      "SIMULATED arm (a scripted approver, not a person; pre-registered design, seed 20261115, 240 requests): routing accuracy 1.000 (240 of 240, independently recomputed).",
+      "SIMULATED: auto-approve 35.4 percent (85 requests), escalation 51.7 percent (124), deny 12.9 percent (31); approval rate among decided 86.3 percent (107 approved, 17 rejected); decision latency p50 52 s, p90 133 s, p99 239 s. The delays are drawn from a stated distribution, not measured from a person."
+    ],
+    "ceiling": "The live arm has NOT been run: no human results exist and none are claimed anywhere in the repo. A live session of 30 requests (about 10 to 15 minutes with a real approver) is ready to run with one command."
+  },
+  "enterprise-delivery-pack": {
+    "name": "enterprise-delivery-pack",
+    "what": "An enterprise delivery pack for one real public system, rag-eval-harness: a business requirements document, a process map, a solution architecture, a security review, a worked ROI model whose inputs are each labelled measured or assumption, and a timed 15-minute demo script.",
+    "results": [
+      "ROI model headline (a model output under stated assumptions, labour only): year-1 ROI 172.7 percent, payback 2.5 months.",
+      "Sensitivity, printed in the pack: at 3 minutes of manual review per sampled answer the ROI falls to 71 percent; at 10 minutes it rises to 257 percent; at 4 evaluation cycles per year it falls to 43 percent; the combined unfavourable case is minus 20 percent with no year-1 payback.",
+      "The two most fragile assumptions are A3 (manual review time per sampled answer, base value 6 minutes) and A1 (evaluation cycles per year, base value 12)."
+    ],
+    "ceiling": "The client scenario in the pack (a mid-size firm rolling out a support RAG assistant) is illustrative and labelled as such on the cover. This pack is not a record of a real client engagement, and the ROI is a model output, never a realized saving."
+  },
+  "fde-backend-service": {
+    "name": "fde-backend-service",
+    "what": "A multi-user backend service built with FastAPI, PostgreSQL and async SQLAlchemy, in a community clinic appointment and referral domain with synthetic data only. It has JWT authentication with argon2 password hashing and rotating refresh tokens, role-based authorization (user and admin), referral CRUD with nested appointments, HMAC-SHA256 signed outbound webhooks with retries and a delivery log, and a keyless Open-Meteo weather integration.",
+    "results": [
+      "32 tests pass in CI against a real PostgreSQL 16 service container, covering auth, refresh rotation, cross-owner denials, CRUD, webhook signing with retry and the delivery log, and the mocked weather integration.",
+      "Deployment status on 2026-11-15: live on BlackBoxV3, a personal fleet server, publicly reachable through a temporary Cloudflare quick tunnel; the health endpoint and an authenticated round trip were verified against the live service."
+    ],
+    "ceiling": "A runnable, tested backend service deployed on a personal fleet server. It is not a production system and has no real users or customers."
+  }
+}
